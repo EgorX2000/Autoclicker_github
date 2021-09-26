@@ -8,12 +8,12 @@ import cv2
 import numpy as np
 
 ahk = AHK()
-start = datetime.now()
-timeout = start + timedelta(seconds = 30)
 
 login_path = "Buttons/login.png"
 captcha_path = "Buttons/captcha.png"
 get_sms_code_path = "Buttons/get_sms_code.png"
+sms_code_form_path = "Buttons/sms_code_form.png"
+main_page_url_path = "Buttons/main_page_url.png"
 
 
 webbrowser.open_new("https://accounts.binance.com/ru/login")
@@ -38,5 +38,24 @@ while get_sms_code == None:
 ahk.click(get_sms_code)
 
 webbrowser.open_new("https://messages.google.com/web/conversations/54")
+#parse sms
+pyautogui.sleep(10)
 
-sms_code = None
+keyboard.press_and_release("Ctrl+w")
+
+sms_code_form = pyautogui.locateCenterOnScreen(sms_code_form_path, confidence = 0.9)
+while sms_code_form == None:
+    pyautogui.sleep(0.1)
+    sms_code_form = pyautogui.locateCenterOnScreen(sms_code_form_path, confidence = 0.9)
+ahk.click(sms_code_form)
+
+keyboard.press_and_release("Ctrl+v")
+
+main_page_url = pyautogui.locateCenterOnScreen(main_page_url_path, confidence = 0.9)
+while main_page_url == None:
+    pyautogui.sleep(0.1)
+    main_page_url = pyautogui.locateCenterOnScreen(main_page_url_path, confidence = 0.9)
+ahk.click(main_page_url)
+ahk.type("https://www.binance.com/ru/trade/BTC_USDT?layout=basic")
+
+keyboard.press_and_release("Enter")
