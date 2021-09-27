@@ -16,6 +16,8 @@ timeout = start + timedelta(seconds = 10)
 
 dark_theme_path = "Buttons/dark_theme.png"
 light_theme_path = "Buttons/light_theme.png"
+email_path = "Buttons/email.png"
+password_path = "Buttons/password.png"
 login_path = "Buttons/login.png"
 captcha_path = "Buttons/captcha.png"
 get_sms_code_path = "Buttons/get_sms_code.png"
@@ -35,6 +37,20 @@ while dark_theme == None and light_theme == None:
     light_theme = pyautogui.locateCenterOnScreen(light_theme_path, confidence = 0.95)
     start = datetime.now()
 ahk.click(dark_theme)
+
+email = pyautogui.locateCenterOnScreen(email_path, confidence = 0.95)
+while email == None:
+    pyautogui.sleep(0.1)
+    email = pyautogui.locateCenterOnScreen(email_path, confidence = 0.95)
+ahk.click(email)
+ahk.type("ebkrivoshapkin@gmail.com")
+
+password = pyautogui.locateCenterOnScreen(password_path, confidence = 0.95)
+while password == None:
+    pyautogui.sleep(0.1)
+    password = pyautogui.locateCenterOnScreen(password_path, confidence = 0.95)
+ahk.click(password)
+ahk.type("")
 
 login = pyautogui.locateCenterOnScreen(login_path, confidence = 0.95)
 while login == None:
