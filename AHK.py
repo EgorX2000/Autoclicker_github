@@ -166,7 +166,7 @@ while password == None:
     pyautogui.sleep(0.1)
     password = pyautogui.locateCenterOnScreen(password_path, confidence = 0.9)
 ahk.click(password)
-ahk.type("1Qaz2Wsx3Edc4Rfv5Tgb6Yhn7Ujm8Ik,9Ol.0P;/")
+ahk.type("")
 
 login = pyautogui.locateCenterOnScreen(login_path, confidence = 0.9)
 while login == None:
