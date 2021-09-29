@@ -169,7 +169,7 @@ ahk.type("ebkrivoshapkin@gmail.com")
 
 ahk.click(password)
 print("password success")
-ahk.type("1Qaz2Wsx3Edc4Rfv5Tgb6Yhn7Ujm8Ik,9Ol.0P;/")
+ahk.type("")
 
 login = pyautogui.locateCenterOnScreen(login_path, confidence = conf)
 while login == None:
