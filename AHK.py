@@ -13,9 +13,9 @@ import sys
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-EMAIL = "ebkrivoshapkin@gmail.com"
-PASSWORD = "1Qaz2Wsx3Edc4Rfv5Tgb6Yhn7Ujm8Ik,9Ol.0P;/"
-SMS_LINK = "https://messages.google.com/web/conversations/54"
+EMAIL = ""
+PASSWORD = ""
+SMS_LINK = ""
 USED_PERCENT_OF_BALANCE = 66 / 100
 
 start = datetime.now()
