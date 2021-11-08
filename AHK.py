@@ -1,31 +1,57 @@
+from datetime import datetime, timedelta
 import webbrowser
 from ahk import AHK
-from ahk.window import Window
-import keyboard
-import pyautogui
-import os
-from datetime import datetime, timedelta
 import cv2
-import numpy as np
+import pyautogui
 import pytesseract
-import math
-import sys
+import pyperclip
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from binance.client import Client
+import colorama
+from colorama import Fore, Style
+colorama.init()
 
-EMAIL = "ebkrivoshapkin@gmail.com"
-PASSWORD = "1Qaz2Wsx3Edc4Rfv5Tgb6Yhn7Ujm8Ik,9Ol.0P;/"
+EMAIL = ""
+PASSWORD = ""
+API_KEY, API_SECRET = "", ""
 SMS_LINK = "https://messages.google.com/web/conversations/54"
-USED_PERCENT_OF_BALANCE = 66 / 100
-
-start = datetime.now()
-timeout = start + timedelta(seconds = 10)
+TRADING_LINK = "https://www.binance.com/ru/trade/ETH_USDT?layout=basic"
+USED_PERCENT_OF_BALANCE = 100 / 100
 
 ahk = AHK()
+ahk.mouse_speed = 2
 pytesseract.pytesseract.tesseract_cmd = r"C:/Program Files/Tesseract-OCR/tesseract.exe"
 options = Options()
 options.add_argument("--headless")
 options.add_argument("--disable-gpu")
+options.add_experimental_option('excludeSwitches', ['enable-logging'])
+service = Service("D:/Документы/Python/Autoclicker/Chromedriver/chromedriver.exe")
+
+def STOP():
+    stop = ahk.key_state("Esc")
+    if stop == True:
+        driver.quit()
+        ahk.send_event("^w")
+        exit()
+
+with open("operation_logs.log", "r") as log:
+    length = len(log.readline())
+    if length > 0:
+        last_and_number = log.readlines()[-8:-5]
+        operation_number = int(last_and_number[0].replace("operation #", "").replace("\n", ""))
+        last_operation = last_and_number[1].replace("[", "").replace("]:\n", "")
+        lastopprice = float(last_and_number[2].replace("    PRICE: ", "").replace("USDT", "").replace("\n", ""))
+        if last_operation == "BUY":
+            next_operation = "SELL"
+        else:
+            next_operation = "BUY"
+    else:
+        operation_number = 0
+        next_operation = "BUY"
+        lastopprice = 0
 
 dark_theme_switch_path = "Buttons/dark_theme_switch_175.png"
 light_theme_switch_path = "Buttons/light_theme_switch_175.png"
@@ -39,7 +65,9 @@ buttons = {
     "sms" : "Buttons/sms_175.png",
     "sms_code_form" : "Buttons/sms_code_form_175.png",
     "sms_code_form_check" : "Buttons/sms_code_form_check_175.png",
-    "search" : "Buttons/search_175.png",
+    "ad" : "Buttons/ad_175.png",
+    "buy_sell_form" : "Buttons/buy_sell_form_175.png",
+    "market" : "Buttons/market_175.png",
     "buy_location" : "Buttons/buy_location_175.png",
     "sell_location" : "Buttons/sell_location_175.png",
     "price" : "Buttons/price_175.png",
@@ -58,7 +86,9 @@ dsize = {
     "sms" : "",
     "sms_code_form" : "",
     "sms_code_form_check" : "",
-    "search" : "",
+    "ad" : "",
+    "buy_sell_form" : "",
+    "market" : "",
     "buy_location" : "",
     "sell_location" : "",
     "price" : "",
@@ -66,15 +96,22 @@ dsize = {
     "quantity_form" : "",
     "cost" : "",
     "buy_button" : "",
-    "sell_button" : "",
+    "sell_button" : ""
     }
+
+#font
+green = f"{Fore.GREEN}"
+red = f"{Fore.RED}"
+blue = f"{Fore.CYAN}"
+reset = f"{Style.RESET_ALL}"
+
+client = Client(API_KEY, API_SECRET)
+client.API_URL = "https://api.binance.com/api"
 
 webbrowser.open_new("https://accounts.binance.com/ru/login")
 
-driver = webdriver.Chrome("D:/Документы/Python/Autoclicker_test/Chromedriver/chromedriver.exe", chrome_options = options)
-
-driver.get("https://www.binance.com/ru/trade/BTC_USDT?layout=basic")
-pyautogui.sleep(0.5)
+driver = webdriver.Chrome(service = service, options = options)
+driver.get(TRADING_LINK)
 
 browser = ahk.active_window 
 browser.maximize()
@@ -107,7 +144,8 @@ if dark_theme_switch == None and light_theme_switch == None:
 
         if dark_theme_switch:
             scale = i / 100
-            ahk.click(dark_theme_switch)
+            ahk.mouse_move(dark_theme_switch[0], dark_theme_switch[1])
+            ahk.click()
             print("1st scaling success", scale)
             print("dark_theme_switch success")
             break
@@ -116,17 +154,22 @@ if dark_theme_switch == None and light_theme_switch == None:
             scale = i / 100
             print("1st scaling success", scale)
             break
+
+        STOP()
         
 elif dark_theme_switch:
     scale = 1
     conf = 0.85
-    ahk.click(dark_theme_switch)
+    ahk.mouse_move(dark_theme_switch[0], dark_theme_switch[1])
+    ahk.click()
     print("scaling success", scale)
 
 else:
     scale = 1
     conf = 0.85
     print("scaling success", scale)
+
+STOP()
 
 password_path = cv2.imread("Buttons/password_175.png", cv2.IMREAD_UNCHANGED)
 
@@ -178,9 +221,13 @@ if password == None:
                 print("2nd scaling success", scale)
                 break
 
+        STOP()
+
 else:
     conf = 0.85
     print("2nd scaling success", scale)
+
+STOP()
 
 for i, value in buttons.items():
     buttons[i] = cv2.imread(buttons[i], cv2.IMREAD_UNCHANGED)
@@ -193,134 +240,300 @@ for i, value in buttons.items():
 
     buttons[i] = "Buttons/" + i + "_scaled.png"
 
-email = pyautogui.locateCenterOnScreen(buttons["email"], confidence = conf)
-while email == None:
-    pyautogui.sleep(0.1)
-    email = pyautogui.locateCenterOnScreen(buttons["email"], confidence = conf)
-ahk.click(email)
+def BUTTON(b, conf):
+    button = pyautogui.locateOnScreen(buttons[b], confidence = conf)
+    while button == None:
+        pyautogui.sleep(0.1)
+        button = pyautogui.locateOnScreen(buttons[b], confidence = conf)
+        STOP()
+    STOP()
+    return button
+
+def CLICK(b, conf):
+    button = pyautogui.locateOnScreen(buttons[b], confidence = conf)
+    while button == None:
+        pyautogui.sleep(0.1)
+        button = pyautogui.locateOnScreen(buttons[b], confidence = conf)
+        STOP()
+    ahk.mouse_move(button[0] + button[2] * 0.5, button[1] + button[3] * 0.5)
+    pyautogui.sleep(0.01)
+    ahk.click()
+    STOP()
+    return button
+
+email = CLICK("email", conf)
+ahk.type(str(EMAIL))
 print("email success")
-ahk.type(EMAIL)
 
-ahk.click(password)
+ahk.mouse_move(password[0], password[1])
+ahk.click()
+ahk.type(str(PASSWORD))
 print("password success")
-ahk.type(PASSWORD)
 
-login = pyautogui.locateCenterOnScreen(buttons["login"], confidence = conf)
-while login == None:
-    pyautogui.sleep(0.1)
-    login = pyautogui.locateCenterOnScreen(buttons["login"], confidence = conf)
-ahk.click(login)
+login = CLICK("login", conf)
 print("login success")
 
-captcha = pyautogui.locateCenterOnScreen(buttons["captcha"], confidence = conf - 0.05)
-while captcha == None:
-    pyautogui.sleep(0.1)
-    captcha = pyautogui.locateCenterOnScreen(buttons["captcha"], confidence = conf - 0.05)
-ahk.mouse_move(captcha[0], captcha[1])
+captcha = BUTTON("captcha", conf - 0.05)
+ahk.mouse_move(captcha[0] + captcha[2] * 0.5, captcha[1] + captcha[3] * 0.5)
 print("captcha success")
 
-get_sms_code = pyautogui.locateCenterOnScreen(buttons["get_sms_code"], confidence = conf - 0.05)
-while get_sms_code == None:
-    pyautogui.sleep(0.1)
-    get_sms_code = pyautogui.locateCenterOnScreen(buttons["get_sms_code"], confidence = conf - 0.05)
-ahk.click(get_sms_code)
+get_sms_code = CLICK("get_sms_code", conf - 0.05)
 print("get_sms_code success")
 
 webbrowser.open_new(SMS_LINK)
 
-sms_check = pyautogui.locateCenterOnScreen(buttons["sms_check"], confidence = conf - 0.05)
-while sms_check == None:
-    pyautogui.sleep(0.1)
-    sms_check = pyautogui.locateCenterOnScreen(buttons["sms_check"], confidence = conf - 0.05)
-if sms_check:
-    print("sms_check success")
+sms_check = BUTTON("sms_check", conf - 0.05)
+print("sms_check success")
+pyautogui.sleep(0.1)
+sms = list(pyautogui.locateAllOnScreen(buttons["sms"], confidence = conf - 0.05))
+while sms == None:
     pyautogui.sleep(0.1)
     sms = list(pyautogui.locateAllOnScreen(buttons["sms"], confidence = conf - 0.05))
-    while sms == None:
-        pyautogui.sleep(0.1)
-        sms = list(pyautogui.locateAllOnScreen(buttons["sms"], confidence = conf - 0.05))
-    sms = sms[-1]
-    sms = pyautogui.screenshot(region = (sms))
-    print("sms success")
-    pyautogui.sleep(0.1)
+    STOP()
+sms = sms[-1]
+sms = pyautogui.screenshot(region = (sms))
+print("sms success")
+pyautogui.sleep(0.1)
 sms_text = pytesseract.image_to_string(sms)
-sms_code = str(sms_text.split()[3])
-sms_code = sms_code.replace(".", "")
-sms_code = sms_code.strip()
+sms_code = sms_text.split()[3]
+sms_code = sms_code.replace(".", "").strip()
 
 ahk.send_event("^w")
 
-if scale <= 0.6 :
-    ahk.double_click(light_theme_switch)
-
-sms_code_form = pyautogui.locateCenterOnScreen(buttons["sms_code_form"], confidence = conf - 0.1)
-while sms_code_form == None:
-    pyautogui.sleep(0.1)
-    sms_code_form = pyautogui.locateCenterOnScreen(buttons["sms_code_form"], confidence = conf - 0.1)
-ahk.click(sms_code_form)
+sms_code_form = CLICK("sms_code_form", conf - 0.1)
 print("sms_code_form success")
 
-ahk.type(sms_code)
+ahk.type(str(sms_code))
+pyautogui.sleep(0.5)
+ahk.send_event("{Enter}")
 
-sms_code_form_check = pyautogui.locateCenterOnScreen(buttons["sms_code_form_check"], confidence = conf)
-while sms_code_form_check == None:
-    pyautogui.sleep(0.1)
-    sms_code_form_check = pyautogui.locateCenterOnScreen(buttons["sms_code_form_check"], confidence = conf)
+sms_code_form_check = BUTTON("sms_code_form_check", conf - 0.05)
 print("sms_code_form_check success")
+
+ahk.mouse_speed = 0
 
 ahk.send_event("^l")
 pyautogui.sleep(0.1)
-ahk.type("https://www.binance.com/ru/trade/ETH_USDT?layout=basic")
+ahk.type(str(TRADING_LINK))
 pyautogui.sleep(0.1)
 ahk.send_event("{Enter}")
 pyautogui.sleep(0.1)
-search = pyautogui.locateCenterOnScreen(buttons["search"], confidence = conf)
-while search == None:
+start = datetime.now()
+timeout = start + timedelta(seconds = 120)
+ad = pyautogui.locateOnScreen(buttons["ad"], confidence = conf - 0.05)
+while ad == None and start < timeout:
     pyautogui.sleep(0.1)
-    search = pyautogui.locateCenterOnScreen(buttons["search"], confidence = conf)
+    ad = pyautogui.locateOnScreen(buttons["ad"], confidence = conf - 0.05)
+    start = datetime.now()
+    STOP()
 pyautogui.sleep(0.1)
-ahk.send_event("{Space}")
+ahk.send_event("^{End}")
+buy_sell_form = BUTTON("buy_sell_form", conf)
+ahk.mouse_move(0, 0)
+pyautogui.sleep(0.1)
+market = pyautogui.locateOnScreen(buttons["market"], region = (buy_sell_form), confidence = conf - 0.15)
+ahk.mouse_move(market[0] + market[2] * 0.5, market[1] + market[3] * 0.5)
+pyautogui.sleep(0.01)
+ahk.click()
 print("trading page")
 
 class buy:
-    location = pyautogui.locateOnScreen(buttons["buy_location"], confidence = conf)
-    while location == None:
-        pyautogui.sleep(0.1)
-        location= pyautogui.locateOnScreen(buttons["buy_location"], confidence = conf)
+    location = BUTTON("buy_location", conf)
     price = pyautogui.locateCenterOnScreen(buttons["price"], region = (location), confidence = conf - 0.05)
-    quantity = pyautogui.locateOnScreen(buttons["quantity"], region = (location), confidence = conf - 0.05)
-    quantity_form = pyautogui.locateOnScreen(buttons["quantity_form"], region = (location), confidence = conf - 0.05)
-    quantity_value = 0
-    cost = pyautogui.locateCenterOnScreen(buttons["cost"], region = (location), confidence = conf - 0.05)
+    quantity = pyautogui.locateOnScreen(buttons["quantity"], region = (location), confidence = conf - 0.1)
+    quantity_form = pyautogui.locateCenterOnScreen(buttons["quantity_form"], region = (location), confidence = conf - 0.05)
+    max_quantity = 0
+    cost = pyautogui.locateCenterOnScreen(buttons["cost"], region = (location), confidence = conf)
     button = pyautogui.locateCenterOnScreen(buttons["buy_button"], confidence = conf)
 class sell:
-    location = pyautogui.locateOnScreen(buttons["sell_location"], confidence = conf)
-    while location == None:
-        pyautogui.sleep(0.1)
-        location= pyautogui.locateOnScreen(buttons["sell_location"], confidence = conf)
+    location = BUTTON("sell_location", conf)
     price = pyautogui.locateCenterOnScreen(buttons["price"], region = (location), confidence = conf - 0.05)
-    quantity = pyautogui.locateOnScreen(buttons["quantity"], region = (location), confidence = conf - 0.05)
-    quantity_value = 0
-    quantity_form = pyautogui.locateOnScreen(buttons["quantity_form"], region = (location), confidence = conf - 0.05)
-    cost = pyautogui.locateCenterOnScreen(buttons["cost"], region = (location), confidence = conf - 0.05)
+    quantity = pyautogui.locateOnScreen(buttons["quantity"], region = (location), confidence = conf - 0.1)
+    max_quantity = 0
+    quantity_form = pyautogui.locateCenterOnScreen(buttons["quantity_form"], region = (location), confidence = conf - 0.05)
+    cost = pyautogui.locateCenterOnScreen(buttons["cost"], region = (location), confidence = conf)
     button = pyautogui.locateCenterOnScreen(buttons["sell_button"], confidence = conf)
 
-pyautogui.sleep(0.1)
-ahk.click(buy.quantity[0] + buy.quantity[2] * USED_PERCENT_OF_BALANCE, buy.quantity[1] + buy.quantity[3] * 0.5)
-pyautogui.sleep(0.1)
+def INFO(operation_number, price, quantity, reason, operation, color):
+    pyautogui.sleep(2.5)
+    balance = BALANCE(price)
 
-buy.quantity_value = pyautogui.screenshot(region = (buy.quantity_form[0] + buy.quantity_form[2] * 0.22, buy.quantity_form[1], buy.quantity_form[2] * 0.7, buy.quantity_form[3]))
-pyautogui.sleep(0.1)
-buy.quantity_value = pytesseract.image_to_string(buy.quantity_value)
-buy.quantity_value = str(buy.quantity_value)
-buy.quantity_value = buy.quantity_value.replace(",", ".")
-buy.quantity_value = buy.quantity_value.strip()
-buy.quantity_value = float(buy.quantity_value)
-print(buy.quantity_value)
+    info = f'''{datetime.now().replace(microsecond=0)}
+$blueoperation #{operation_number}
+$color[$operation]:
+    PRICE: {price} USDT
+    QUANTITY: {quantity} ETH
+    COST: {price * quantity} USDT
+    REASON: {reason}
+BALANCE: {balance} USDT$reset
 
-#stop = ahk.key_state("Esc")
-#while stop == False:
-#    price = driver.find_element_by_class_name("showPrice").text
-#    print(price)
-#    stop = ahk.key_state("Esc")
-#    pyautogui.sleep(0.1)
+'''
+
+    print(info.replace("$operation", operation).replace("$color", color).replace("$blue", blue).replace("$reset", reset))
+
+    with open("operation_logs.log", "a") as log:
+        log.write(info.replace("$operation", operation).replace("$color", "").replace("$blue", "").replace("$reset", ""))
+
+def BALANCE(price):
+    usdt = float(client.get_asset_balance(asset="USDT")["free"]) + float(client.get_asset_balance(asset="USDT")["locked"])
+    eth = float(client.get_asset_balance(asset="ETH")["free"]) + float(client.get_asset_balance(asset="ETH")["locked"])
+    eth2usdt = eth * price
+    balance = usdt + eth2usdt
+    return balance
+
+def BUY(price, operation_number, reason):
+    ahk.mouse_move(buy.quantity[0] + buy.quantity[2], buy.quantity[1] + buy.quantity[3] * 0.5)
+    pyautogui.sleep(0.01)
+    ahk.click()
+    pyautogui.sleep(0.01)
+
+    ahk.mouse_move(buy.quantity_form[0], buy.quantity_form[1])
+    pyautogui.sleep(0.01)
+    ahk.click()
+    pyautogui.sleep(0.01)
+    ahk.send_event("^a")
+    pyautogui.sleep(0.01)
+    ahk.send_event("^c")
+    pyautogui.sleep(0.01)
+    buy.max_quantity = str(pyperclip.paste())
+    buy.max_quantity = float(buy.max_quantity.replace(",", "."))
+    ahk.mouse_move(buy.quantity_form[0], buy.quantity_form[1])
+    pyautogui.sleep(0.01)
+    ahk.click()
+
+    quantity = buy.max_quantity * USED_PERCENT_OF_BALANCE
+
+    if quantity >= 11 / price:
+        ahk.mouse_move(buy.quantity_form[0], buy.quantity_form[1])
+        pyautogui.sleep(0.01)
+        ahk.click()
+        pyautogui.sleep(0.01)
+        ahk.send_event("^a")
+        pyautogui.sleep(0.01)
+        ahk.type(str(quantity).replace(".", ","))
+        pyautogui.sleep(0.01)
+
+        ahk.mouse_move(buy.button[0], buy.button[1])
+        pyautogui.sleep(0.01)
+        ahk.click()
+
+        INFO(operation_number, price, quantity, reason, operation = "BUY", color = f"{green}")
+
+        return(price)
+    
+    else:
+        operation_number -= 1
+        return(price)
+
+def SELL(price, operation_number, reason):
+    ahk.mouse_move(sell.quantity[0] + sell.quantity[2], sell.quantity[1] + sell.quantity[3] * 0.5)
+    pyautogui.sleep(0.01)
+    ahk.click()
+    pyautogui.sleep(0.01)
+
+    ahk.mouse_move(sell.quantity_form[0], sell.quantity_form[1])
+    pyautogui.sleep(0.01)
+    ahk.click()
+    pyautogui.sleep(0.01)
+    ahk.send_event("^a")
+    pyautogui.sleep(0.01)
+    ahk.send_event("^c")
+    pyautogui.sleep(0.01)
+    sell.max_quantity = str(pyperclip.paste())
+    sell.max_quantity = float(sell.max_quantity.replace(",", "."))
+    ahk.mouse_move(sell.quantity_form[0], sell.quantity_form[1])
+    pyautogui.sleep(0.01)
+    ahk.click()
+
+    quantity = sell.max_quantity * USED_PERCENT_OF_BALANCE
+
+    if quantity >= 11 / price:
+        ahk.mouse_move(sell.quantity_form[0], sell.quantity_form[1])
+        pyautogui.sleep(0.01)
+        ahk.click()
+        pyautogui.sleep(0.01)
+        ahk.send_event("^a")
+        pyautogui.sleep(0.01)
+        ahk.type(str(quantity).replace(".", ","))
+        pyautogui.sleep(0.01)
+
+        ahk.mouse_move(sell.button[0], sell.button[1])
+        pyautogui.sleep(0.01)
+        ahk.click()
+
+        INFO(operation_number, price, quantity, reason, operation = "SELL", color = f"{red}")
+
+        return(price)
+    
+    else:
+        operation_number -= 1
+        return(price)
+
+buy_success = False
+sell_success = False
+ahk.mouse_move(buy.quantity[0], buy.quantity[1] + buy.quantity[3] * 0.5)
+pyautogui.sleep(0.01)
+ahk.click()
+if lastopprice == 0:
+    price = float(driver.find_element(By.CLASS_NAME, "showPrice").text.replace(",", ""))
+    lastopprice = price
+start = datetime.now()
+timeout = start + timedelta(seconds = 600)
+stop = ahk.key_state("Esc")
+while stop == False:
+    start = datetime.now()
+    if start >= timeout:
+        ahk.mouse_move(0,0)
+        timeout = start + timedelta(seconds = 600)
+
+    #buy thresholds
+    dip_threshold = -0.4
+    upward_trend_threshold = 0.325
+
+    #sell thresholds
+    profit_threshold = 0.325
+    stop_loss_threshold = -0.35
+
+    price = float(driver.find_element(By.CLASS_NAME, "showPrice").text.replace(",", ""))
+
+    percentageDiff = (price - lastopprice) / lastopprice * 100
+
+    if next_operation == "BUY":
+        if percentageDiff <= dip_threshold:
+            operation_number += 1
+            reason = "DIP_THRESHOLD"
+            lastopprice = BUY(price, operation_number, reason)
+            buy_success = True
+
+        elif percentageDiff >= upward_trend_threshold:
+            operation_number += 1
+            reason = "UPWARD_TREND_THRESHOLD"
+            lastopprice = BUY(price, operation_number, reason)
+            buy_success = True
+
+    if next_operation == "SELL":
+        if percentageDiff >= profit_threshold:
+            operation_number += 1
+            reason = "PROFIT_THRESHOLD"
+            lastopprice = SELL(price, operation_number, reason)
+            sell_success = True
+
+        elif percentageDiff <= stop_loss_threshold:
+            operation_number += 1
+            reason = "STOP_LOSS_THRESHOLD"
+            lastopprice = SELL(price, operation_number, reason)
+            sell_success = True
+
+    if buy_success == True:
+        next_operation = "SELL"
+        buy_success = False
+
+    elif sell_success == True:
+        next_operation = "BUY"
+        sell_success = False
+
+    stop = ahk.key_state("Esc")
+else:
+    driver.quit()
+    ahk.send_event("^w")
+    exit()
