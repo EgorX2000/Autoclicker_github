@@ -10,16 +10,17 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from binance.client import Client
+import random
 import colorama
 from colorama import Fore, Style
 colorama.init()
 
-EMAIL = ""
-PASSWORD = ""
-API_KEY, API_SECRET = "", ""
+EMAIL = "ebkrivoshapkin@gmail.com"
+PASSWORD = "1Qaz2Wsx3Edc4Rfv5Tgb6Yhn7Ujm8Ik,9Ol.0P;/"
+API_KEY, API_SECRET = "bKHfCOE3GD8z7GkKciYzAjI39AHjLPQ13cWsD1sZmkM7NoI8DRgMRoxGzy1KnssP", "Ao05qI3wtE0WkAS0F83iZU1X7PZclshgEvCOTtYUJ0Lh4UIRaen0YH2K36pb5KK7"
 SMS_LINK = "https://messages.google.com/web/conversations/54"
 TRADING_LINK = "https://www.binance.com/ru/trade/ETH_USDT?layout=basic"
-USED_PERCENT_OF_BALANCE = 100 / 100
+USED_PERCENT_OF_BALANCE = 99 / 100
 
 ahk = AHK()
 ahk.mouse_speed = 2
@@ -34,7 +35,7 @@ def STOP():
     stop = ahk.key_state("Esc")
     if stop == True:
         driver.quit()
-        ahk.send_event("^w")
+        ahk.send_event("^+w")
         exit()
 
 with open("operation_logs.log", "r") as log:
@@ -60,6 +61,7 @@ buttons = {
     "email" : "Buttons/email_175.png",
     "login" : "Buttons/login_175.png",
     "captcha" : "Buttons/captcha_175.png",
+    "captcha_button" : "Buttons/captcha_button_175.png",
     "get_sms_code" : "Buttons/get_sms_code_175.png",
     "sms_check" : "Buttons/sms_check_175.png",
     "sms" : "Buttons/sms_175.png",
@@ -81,6 +83,7 @@ dsize = {
     "email" : "",
     "login" : "",
     "captcha" : "",
+    "captcha_button" : "",
     "get_sms_code" : "",
     "sms_check" : "",
     "sms" : "",
@@ -261,21 +264,33 @@ def CLICK(b, conf):
     STOP()
     return button
 
-email = CLICK("email", conf)
-ahk.type(str(EMAIL))
-print("email success")
+def LOGIN():
+    global email, login, captcha
+    
+    email = CLICK("email", conf)
+    ahk.type(str(EMAIL))
 
-ahk.mouse_move(password[0], password[1])
-ahk.click()
-ahk.type(str(PASSWORD))
-print("password success")
+    ahk.mouse_move(password[0], password[1])
+    pyautogui.sleep(0.01)
+    ahk.click()
+    ahk.type(str(PASSWORD))
 
-login = CLICK("login", conf)
-print("login success")
+    login = CLICK("login", conf)
 
-captcha = BUTTON("captcha", conf - 0.05)
-ahk.mouse_move(captcha[0] + captcha[2] * 0.5, captcha[1] + captcha[3] * 0.5)
-print("captcha success")
+    captcha = BUTTON("captcha", conf)
+    ahk.mouse_move(captcha[0] + captcha[2] * 0.07, captcha[1] + captcha[3] * 0.5)
+    ahk.mouse_drag(random.randint(int(captcha[0] + captcha[2] * 0.26), int(captcha[0] + captcha[2] * 0.93)), captcha[1] + captcha[3] * 0.5)
+    pyautogui.sleep(2)
+    STOP()
+    captcha_button = pyautogui.locateOnScreen(buttons["captcha_button"], confidence = conf - 0.05)
+    if captcha_button != None:
+        ahk.send_event("^+r")
+        LOGIN()
+    else:
+        print("login&captcha success")
+        return
+
+LOGIN()
 
 get_sms_code = CLICK("get_sms_code", conf - 0.05)
 print("get_sms_code success")
@@ -318,6 +333,8 @@ ahk.type(str(TRADING_LINK))
 pyautogui.sleep(0.1)
 ahk.send_event("{Enter}")
 pyautogui.sleep(0.1)
+ahk.mouse_move(0, 100)
+pyautogui.sleep(0.1)
 start = datetime.now()
 timeout = start + timedelta(seconds = 120)
 ad = pyautogui.locateOnScreen(buttons["ad"], confidence = conf - 0.05)
@@ -327,8 +344,12 @@ while ad == None and start < timeout:
     start = datetime.now()
     STOP()
 pyautogui.sleep(0.1)
-ahk.send_event("^{End}")
-buy_sell_form = BUTTON("buy_sell_form", conf)
+buy_sell_form = pyautogui.locateOnScreen(buttons["buy_sell_form"], confidence = conf)
+while buy_sell_form == None:
+    pyautogui.sleep(0.1)
+    ahk.wheel_down()
+    buy_sell_form = pyautogui.locateOnScreen(buttons["buy_sell_form"], confidence = conf)
+    STOP()
 ahk.mouse_move(0, 0)
 pyautogui.sleep(0.1)
 market = pyautogui.locateOnScreen(buttons["market"], region = (buy_sell_form), confidence = conf - 0.15)
@@ -363,7 +384,7 @@ $blueoperation #{operation_number}
 $color[$operation]:
     PRICE: {price} USDT
     QUANTITY: {quantity} ETH
-    COST: {price * quantity} USDT
+    COST: {round(price * quantity, 2)} USDT
     REASON: {reason}
 BALANCE: {balance} USDT$reset
 
@@ -378,7 +399,7 @@ def BALANCE(price):
     usdt = float(client.get_asset_balance(asset="USDT")["free"]) + float(client.get_asset_balance(asset="USDT")["locked"])
     eth = float(client.get_asset_balance(asset="ETH")["free"]) + float(client.get_asset_balance(asset="ETH")["locked"])
     eth2usdt = eth * price
-    balance = usdt + eth2usdt
+    balance = round(usdt + eth2usdt, 2)
     return balance
 
 def BUY(price, operation_number, reason):
@@ -401,7 +422,7 @@ def BUY(price, operation_number, reason):
     pyautogui.sleep(0.01)
     ahk.click()
 
-    quantity = buy.max_quantity * USED_PERCENT_OF_BALANCE
+    quantity = round(buy.max_quantity * USED_PERCENT_OF_BALANCE, 4)
 
     if quantity >= 11 / price:
         ahk.mouse_move(buy.quantity_form[0], buy.quantity_form[1])
@@ -415,15 +436,16 @@ def BUY(price, operation_number, reason):
 
         ahk.mouse_move(buy.button[0], buy.button[1])
         pyautogui.sleep(0.01)
-        ahk.click()
+        ahk.double_click()
+        pyautogui.sleep(0.1)
+        ahk.mouse_move(0,0)
 
         INFO(operation_number, price, quantity, reason, operation = "BUY", color = f"{green}")
 
         return(price)
     
     else:
-        operation_number -= 1
-        return(price)
+        return
 
 def SELL(price, operation_number, reason):
     ahk.mouse_move(sell.quantity[0] + sell.quantity[2], sell.quantity[1] + sell.quantity[3] * 0.5)
@@ -445,7 +467,7 @@ def SELL(price, operation_number, reason):
     pyautogui.sleep(0.01)
     ahk.click()
 
-    quantity = sell.max_quantity * USED_PERCENT_OF_BALANCE
+    quantity = round(sell.max_quantity * USED_PERCENT_OF_BALANCE, 4)
 
     if quantity >= 11 / price:
         ahk.mouse_move(sell.quantity_form[0], sell.quantity_form[1])
@@ -459,21 +481,24 @@ def SELL(price, operation_number, reason):
 
         ahk.mouse_move(sell.button[0], sell.button[1])
         pyautogui.sleep(0.01)
-        ahk.click()
+        ahk.double_click()
+        pyautogui.sleep(0.1)
+        ahk.mouse_move(0,0)
 
         INFO(operation_number, price, quantity, reason, operation = "SELL", color = f"{red}")
 
         return(price)
     
     else:
-        operation_number -= 1
-        return(price)
+        return
 
 buy_success = False
 sell_success = False
 ahk.mouse_move(buy.quantity[0], buy.quantity[1] + buy.quantity[3] * 0.5)
 pyautogui.sleep(0.01)
 ahk.click()
+pyautogui.sleep(0.1)
+ahk.mouse_move(0,0)
 if lastopprice == 0:
     price = float(driver.find_element(By.CLASS_NAME, "showPrice").text.replace(",", ""))
     lastopprice = price
@@ -487,12 +512,12 @@ while stop == False:
         timeout = start + timedelta(seconds = 600)
 
     #buy thresholds
-    dip_threshold = -0.4
-    upward_trend_threshold = 0.325
+    dip_threshold = -0.3
+    upward_trend_threshold = 0.35
 
     #sell thresholds
     profit_threshold = 0.325
-    stop_loss_threshold = -0.35
+    stop_loss_threshold = -0.375
 
     price = float(driver.find_element(By.CLASS_NAME, "showPrice").text.replace(",", ""))
 
@@ -500,29 +525,73 @@ while stop == False:
 
     if next_operation == "BUY":
         if percentageDiff <= dip_threshold:
-            operation_number += 1
-            reason = "DIP_THRESHOLD"
-            lastopprice = BUY(price, operation_number, reason)
-            buy_success = True
+            threshold_price = price
+            print(threshold_price, datetime.now().replace(microsecond=0))
+            tolerance = 5
+            tolerance_start = datetime.now()
+            tolerance_timeout = tolerance_start + timedelta(seconds = 5)
+            while price <= threshold_price + tolerance:
+                if tolerance_start >= tolerance_timeout:
+                    tolerance = 2.5
+                price = float(driver.find_element(By.CLASS_NAME, "showPrice").text.replace(",", ""))
+                if price <= threshold_price - 0.1:
+                    threshold_price = price
+                tolerance_start = datetime.now()
+                STOP()
+            else:
+                operation_number += 1
+                reason = "DIP_THRESHOLD"
+                lastopprice = BUY(price, operation_number, reason)
+                buy_success = True
+                pyautogui.sleep(5)
+                if lastopprice == None:
+                    operation_number -= 1
+                    lastopprice = price
 
         elif percentageDiff >= upward_trend_threshold:
             operation_number += 1
             reason = "UPWARD_TREND_THRESHOLD"
             lastopprice = BUY(price, operation_number, reason)
             buy_success = True
+            pyautogui.sleep(5)
+            if lastopprice == None:
+                    operation_number -= 1
+                    lastopprice = price
 
     if next_operation == "SELL":
         if percentageDiff >= profit_threshold:
-            operation_number += 1
-            reason = "PROFIT_THRESHOLD"
-            lastopprice = SELL(price, operation_number, reason)
-            sell_success = True
+            threshold_price = price
+            print(threshold_price, datetime.now().replace(microsecond=0))
+            tolerance = 5
+            tolerance_start = datetime.now()
+            tolerance_timeout = tolerance_start + timedelta(seconds = 5)
+            while price >= threshold_price - tolerance:
+                if tolerance_start >= tolerance_timeout:
+                    tolerance = 2.5
+                price = float(driver.find_element(By.CLASS_NAME, "showPrice").text.replace(",", ""))
+                if price >= threshold_price + 0.1:
+                    threshold_price = price
+                tolerance_start = datetime.now()
+                STOP()
+            else:
+                operation_number += 1
+                reason = "PROFIT_THRESHOLD"
+                lastopprice = SELL(price, operation_number, reason)
+                sell_success = True
+                pyautogui.sleep(5)
+                if lastopprice == None:
+                    operation_number -= 1
+                    lastopprice = price
 
         elif percentageDiff <= stop_loss_threshold:
             operation_number += 1
             reason = "STOP_LOSS_THRESHOLD"
             lastopprice = SELL(price, operation_number, reason)
             sell_success = True
+            pyautogui.sleep(5)
+            if lastopprice == None:
+                    operation_number -= 1
+                    lastopprice = price
 
     if buy_success == True:
         next_operation = "SELL"
@@ -535,5 +604,5 @@ while stop == False:
     stop = ahk.key_state("Esc")
 else:
     driver.quit()
-    ahk.send_event("^w")
+    ahk.send_event("^+w")
     exit()
