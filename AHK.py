@@ -15,9 +15,9 @@ import colorama
 from colorama import Fore, Style
 colorama.init()
 
-EMAIL = "ebkrivoshapkin@gmail.com"
-PASSWORD = "1Qaz2Wsx3Edc4Rfv5Tgb6Yhn7Ujm8Ik,9Ol.0P;/"
-API_KEY, API_SECRET = "bKHfCOE3GD8z7GkKciYzAjI39AHjLPQ13cWsD1sZmkM7NoI8DRgMRoxGzy1KnssP", "Ao05qI3wtE0WkAS0F83iZU1X7PZclshgEvCOTtYUJ0Lh4UIRaen0YH2K36pb5KK7"
+EMAIL = ""
+PASSWORD = ""
+API_KEY, API_SECRET = "", ""
 SMS_LINK = "https://messages.google.com/web/conversations/54"
 TRADING_LINK = "https://www.binance.com/ru/trade/ETH_USDT?layout=basic"
 USED_PERCENT_OF_BALANCE = 99 / 100
