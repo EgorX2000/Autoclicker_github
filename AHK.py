@@ -352,7 +352,7 @@ while buy_sell_form == None:
     STOP()
 ahk.mouse_move(0, 0)
 pyautogui.sleep(0.1)
-market = pyautogui.locateOnScreen(buttons["market"], region = (buy_sell_form), confidence = conf - 0.15)
+market = pyautogui.locateOnScreen(buttons["market"], region = (buy_sell_form), confidence = conf - 0.175)
 ahk.mouse_move(market[0] + market[2] * 0.5, market[1] + market[3] * 0.5)
 pyautogui.sleep(0.01)
 ahk.click()
@@ -505,6 +505,7 @@ if lastopprice == 0:
 start = datetime.now()
 timeout = start + timedelta(seconds = 600)
 stop = ahk.key_state("Esc")
+stl_count = 0
 while stop == False:
     start = datetime.now()
     if start >= timeout:
@@ -543,7 +544,6 @@ while stop == False:
                 reason = "DIP_THRESHOLD"
                 lastopprice = BUY(price, operation_number, reason)
                 buy_success = True
-                pyautogui.sleep(5)
                 if lastopprice == None:
                     operation_number -= 1
                     lastopprice = price
@@ -553,7 +553,6 @@ while stop == False:
             reason = "UPWARD_TREND_THRESHOLD"
             lastopprice = BUY(price, operation_number, reason)
             buy_success = True
-            pyautogui.sleep(5)
             if lastopprice == None:
                     operation_number -= 1
                     lastopprice = price
@@ -575,23 +574,26 @@ while stop == False:
                 STOP()
             else:
                 operation_number += 1
+                stl_count = 0
                 reason = "PROFIT_THRESHOLD"
                 lastopprice = SELL(price, operation_number, reason)
                 sell_success = True
-                pyautogui.sleep(5)
                 if lastopprice == None:
                     operation_number -= 1
                     lastopprice = price
 
         elif percentageDiff <= stop_loss_threshold:
             operation_number += 1
+            stl_count += 1
             reason = "STOP_LOSS_THRESHOLD"
             lastopprice = SELL(price, operation_number, reason)
             sell_success = True
-            pyautogui.sleep(5)
             if lastopprice == None:
                     operation_number -= 1
                     lastopprice = price
+
+    if stl_count == 3:
+        pyautogui.sleep(900)
 
     if buy_success == True:
         next_operation = "SELL"
